@@ -1,0 +1,82 @@
+---
+title: "Coursera Assignment"
+author: "Ioannis"
+date: "May 8, 2016"
+output: html_document
+---
+
+#Practical Machine Learning Project : Prediction Assignment Writeup
+
+#Introduction
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+##Data
+```{r, echo=TRUE,cache=TRUE}
+library(caret)
+library(randomForest)
+
+url1 <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+url2  <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+trainset <- read.csv(url(url1))
+testset  <- read.csv(url(url2))
+#
+dim(trainset)
+
+```
+The training data has 160 features of dimension 19622.
+
+##Partitioning training
+
+```{r, echo=FALSE, cache=TRUE}
+
+set.seed(1234)
+train <- createDataPartition(trainset$classe, p = 0.8, list = FALSE)
+training <- trainset[train, ]
+testing <- trainset[-train, ]
+```
+###Remove non Zero Values
+```{r, echo=TRUE,cache=TRUE}
+library(caret)
+
+nearZero <- nearZeroVar(training)
+training <- training[, -nearZero]
+testing  <- testing[, -nearZero]
+
+```
+### Remove NAs
+```{r, echo=TRUE,cache=TRUE}
+#exluce variables with over 95% missing data
+Na    <- sapply(training, function(x) mean(is.na(x))) > 0.95
+training <- training[, Na==FALSE]
+testing  <- testing[, Na==FALSE]
+training <- training[, -(1:5)]
+testing  <- testing[, -(1:5)]
+```
+
+# RANDOM FOREST
+```{r, echo=TRUE,cache=TRUE}
+
+randomForestModel <- randomForest(classe ~ ., data=training, method="rf")
+# Results
+print(randomForestModel)
+
+```
+
+
+##Test 
+```{r, echo=TRUE,cache=TRUE}
+prediction <- predict(randomForestModel, testing)
+
+#Using confusion Matrix to test results
+print(confusionMatrix(prediction, testing$classe))
+```
+
+
+#Prediction
+```{r, echo=TRUE,cache=TRUE}
+finalResult <- predict(randomForestModel, testset)
+finalResult
+```
+
+
